@@ -89,25 +89,6 @@ _typs[1]={10,16,16}
 _typs[2]={12,16,16}
 
 -- common functions
-function collides(
-	typ1,
-	ax1,ay1,ax2,ay2, -- rect a
-	typ2,
-	bx1,by1,bx2,by2  -- rect b
-	)
-	local res=false
-	if typ1 != typ2 and not (
-		ax1>bx2 or
-		ax2<bx1 or
-		ay1>by2 or
-		ay2<by1
-	) then
-		res=true
-	end
-	return res
-end
--->8
--- main
 
 function _init()
 	initarena()
@@ -121,6 +102,26 @@ function _draw()
 	drawfn()
 end
 
+function collides(
+	typa,
+	ax1,ay1,ax2,ay2, -- rect a
+	typb,
+	bx1,by1,bx2,by2  -- rect b
+	)
+	local res=false
+	if typa != typb and not (
+		ax1>bx2 or
+		ax2<bx1 or
+		ay1>by2 or
+		ay2<by1
+	) then
+		res=true
+	end
+	return res
+end
+-->8
+-- main
+
 function initarena()
 	_cowhp=_minhp
 	_cowup=true
@@ -132,6 +133,7 @@ function initarena()
 	initfn=initarena
 	updatefn=updatearena
 	drawfn=drawarena
+	music(3,32000)
 end
 
 function dothecowthings()
@@ -207,26 +209,50 @@ function updatearena()
 		0,
 		_tmrs["hurt"]-1
 	)
-	-- check if hurt
-	for f in all(_foes) do
-		local fx1=f[2]
-		local fy1=f[3]
-		local fx2=f[2]+16
-		local fy2=f[3]+16
-		local cx2=_cowx+8
-		local cy2=_cowy+16
+	-- check if hit by projectile
+	local cx1=_cowx
+	local cy1=_cowy
+	local cx2=_cowx+8
+	local cy2=_cowy+16
+	local hurt=false
+	for a in all(_atks) do
+		local ax1=a[2]
+		local ay1=a[3]
+		local ax2=a[2]+8
+		local ay2=a[3]+8
 		if collides(
-			f[1],fx1,fy1,fx2,fy2,
-			0,_cowx,_cowy,cx2,cy2
+			a[1],ax1,ay1,ax2,ay2,
+			0,cx1,cy1,cx2,cy2
 		) then
 			if (
 				_cowup and
 				_tmrs["hurt"]<1
 			) then
-				_cowhp-=_tols["hurt"]
-				_tmrs["hurt"]=_invn
+				hurt=true
 			end
 		end
+	end
+	-- check if hit by enemy
+	for f in all(_foes) do
+		local fx1=f[2]
+		local fy1=f[3]
+		local fx2=f[2]+16
+		local fy2=f[3]+16
+		if collides(
+			f[1],fx1,fy1,fx2,fy2,
+			0,cx1,cy1,cx2,cy2
+		) then
+			if (
+				_cowup and
+				_tmrs["hurt"]<1
+			) then
+				hurt=true
+			end
+		end
+	end
+	if hurt then
+		_cowhp-=_tols["hurt"]
+		_tmrs["hurt"]=_invn
 	end
 	-- spawn new enemies
 	if rnd()<0.03 then
@@ -257,7 +283,7 @@ function updatearena()
 			local ax2=a[2]+8
 			local ay2=a[3]+8
 			if collides(
-				f[1],fx1,fy1,fx2,fy2,
+				1,fx1,fy1,fx2,fy2,
 				a[1],ax1,ay1,ax2,ay2
 			) then
 				f[4]-=1
@@ -283,7 +309,7 @@ function updatearena()
 		if f[5]<1 then
 			if f[1]==2 then
 				add(_atks,
-					{f[1],f[2],f[3],0,1,150}
+					{1,f[2],f[3],0,1,150}
 				)
 			end
 			f[5]=120
@@ -342,7 +368,7 @@ function drawarena()
 			aflp=true
 		end
 		local fm=3
-		if a[1]==2 then
+		if a[1]==1 then
 			fm=45
 		end
 		spr(fm,a[2],a[3],1,1,aflp)
@@ -578,4 +604,5 @@ __music__
 01 03050444
 00 03044506
 02 04060503
+03 07424344
 
