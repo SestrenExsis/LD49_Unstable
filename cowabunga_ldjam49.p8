@@ -56,6 +56,7 @@ track13:the finally_finalwave
 -->8
 -- globals
 _minhp=200
+_bgnhp=400
 _maxhp=1000
 _cowx=0
 _cowy=0
@@ -87,6 +88,9 @@ _tmrs={} -- frame timers
 _typs={}
 _typs[1]={10,16,16}
 _typs[2]={12,16,16}
+-- particles
+-- #: {colr,x,y,vx,vy,tmr}
+_pxls={}
 
 -- common functions
 
@@ -119,11 +123,36 @@ function collides(
 	end
 	return res
 end
+
+function fx(cx,cy,vx,vy,amt)
+	for i=1,amt do
+		local colr=7
+		if rnd()<0.5 then
+			colr=6
+		end
+		local tmr=rnd(15,30)
+		local siz=1
+		if amt>100 then
+			siz=3
+		elseif amt>25 then
+			siz=2
+		end
+		local pxl={
+			colr,
+			cx+rnd(2*siz+1)-siz,
+			cy+rnd(2*siz+1)-siz,
+			vx+rnd(2*siz+1)-siz,
+			vy+rnd(2*siz+1)-siz,
+			tmr
+		}
+		add(_pxls,pxl)
+	end
+end
 -->8
 -- main
 
 function initarena()
-	_cowhp=_minhp
+	_cowhp=_bgnhp
 	_cowup=true
 	_cowx=60
 	_cowy=_flor
@@ -159,10 +188,18 @@ function dothecowthings()
 			{0,_cowx,_cowy+2,vx,vy,30}
 		)
 		_cowhp-=_tols["fire"] or 0
+		fx(
+			_cowx,_cowy+2,2*vx,0,
+			_tols["fire"]
+		)
 	end
 	if btnp(🅾️) then
 		_cowvy=_jump
 		_cowhp-=_tols["jump"] or 0
+		fx(
+			_cowx,_cowy,0,2,
+			_tols["jump"]
+		)
 	end
 	if mov then
 		_cowx=tx
@@ -197,18 +234,6 @@ function updatearena()
 		_cowvy=0
 	end
 	_cowvy+=_grav
-	-- update health
-	if _cowhp<1 then
-		_cowup=false
-	end
-	_cowhp=mid(0,_cowhp+1,_maxhp)
-	if _cowhp>=_minhp then
-		_cowup=true
-	end
-	_tmrs["hurt"]=max(
-		0,
-		_tmrs["hurt"]-1
-	)
 	-- check if hit by projectile
 	local cx1=_cowx
 	local cy1=_cowy
@@ -250,10 +275,26 @@ function updatearena()
 			end
 		end
 	end
+	-- update health
 	if hurt then
 		_cowhp-=_tols["hurt"]
 		_tmrs["hurt"]=_invn
+		fx(
+			_cowx,_cowy,0,0,
+			_tols["hurt"]
+		)
 	end
+	if _cowhp<1 then
+		_cowup=false
+	end
+	_cowhp=mid(0,_cowhp+1,_maxhp)
+	if _cowhp>=_minhp then
+		_cowup=true
+	end
+	_tmrs["hurt"]=max(
+		0,
+		_tmrs["hurt"]-1
+	)
 	-- spawn new enemies
 	if rnd()<0.03 then
 		local x=rnd({-15,127})
@@ -315,7 +356,18 @@ function updatearena()
 			f[5]=120
 		end
 	end
+	-- update particles
+	for p in all(_pxls) do
+		p[2]+=p[4]
+		p[3]+=p[5]
+		p[6]-=1
+		if p[6]<1 then
+			del(_pxls,p)
+		end
+	end
 end
+-->8
+-- draw
 
 function drawarena()
 	palt(0,false)
@@ -374,7 +426,15 @@ function drawarena()
 		spr(fm,a[2],a[3],1,1,aflp)
 	end
 	print(_cowhp,1,1,7)
-	print(_tmrs["hurt"],1,9,1)
+	print("milk",1,121,7)
+	local milk=100*(_cowhp/_maxhp)
+	rectfill(19,120,124,126,6)
+	rectfill(20,121,20+milk,125,7)
+	line(40,121,40,125,8)
+	-- draw particles
+	for p in all(_pxls) do
+		pset(p[2],p[3],p[1])
+	end
 end
 __gfx__
 4444444440044004400000444444444407efe10407efe10440044004400400044000000440000044400000044400000044444444444444444444444444444444
