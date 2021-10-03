@@ -51,6 +51,10 @@ _me="sestrenexsis"
 _cart="ldjam49"
 --cartdata(_me.."_".._cart.."_1")
 --_version=1
+_cowup=true -- conscious?
+_minhp=200
+_maxhp=1000
+_cowhp=_maxhp
 _cowx=0
 _cowy=0
 _cowvy=0 -- y velocity
@@ -61,6 +65,10 @@ _grav=0.5
 _jump=-4
 _ceil=0
 _flor=92
+_costs={}
+_costs["fire"]=2
+_costs["jump"]=50
+_costs["hurt"]=100
 
 function _init()
 	initarena()
@@ -75,6 +83,8 @@ function _draw()
 end
 
 function initarena()
+	_cowhp=_minhp
+	_cowup=true
 	_cowx=60
 	_cowy=_flor
 	_coww=0
@@ -84,7 +94,7 @@ function initarena()
 	drawfn=drawarena
 end
 
-function updatearena()
+function dothecowthings()
 	local mov=false
 	local tx=_cowx
 	local ty=_cowy
@@ -106,9 +116,11 @@ function updatearena()
 		add(_cowp,
 			{_cowx,_cowy+2,vx,vy,30}
 		)
+		_cowhp-=_costs["fire"] or 0
 	end
 	if btnp(🅾️) then
 		_cowvy=_jump
+		_cowhp-=_costs["jump"] or 0
 	end
 	if mov then
 		_cowx=tx
@@ -116,6 +128,12 @@ function updatearena()
 		_coww+=1
 	else
 		_coww=0
+	end
+end
+
+function updatearena()
+	if _cowup then
+		dothecowthings()
 	end
 	for p in all(_cowp) do
 		local vx=p[3]
@@ -137,6 +155,14 @@ function updatearena()
 		_cowvy=0
 	end
 	_cowvy+=_grav
+	-- update health
+	if _cowhp<1 then
+		_cowup=false
+	end
+	_cowhp=min(_maxhp,_cowhp+1)
+	if _cowhp>=_minhp then
+		_cowup=true
+	end
 end
 
 function drawarena()
@@ -144,17 +170,31 @@ function drawarena()
 	palt(4,false)
 	cls(4)
 	palt(4,true)
-	local ftop=1
-	local fbtm=17
+	local f1=1
+	local f2=17
+	local x1=_cowx
+	local x2=_cowx
+	local y1=_cowy
+	local y2=_cowy+8
 	local flp=false
 	if _cowf=="lf" then
 		flp=true
 	end
-	if _coww>0 then
-		fbtm+=flr((15+_coww/15)%4)
+	if _cowhp<1 then
+		f1=16
+		f2=32
+		x1=_cowx-4
+		x2=_cowx+4
+		if flp then
+			x1+=8
+			x2-=8
+		end
+		y1=_cowy
+	elseif _coww>0 then
+		f2+=flr((15+_coww/15)%4)
 	end
-	spr(ftop,_cowx,_cowy,1,1,flp)
-	spr(fbtm,_cowx,_cowy+8,1,1,flp)
+	spr(f1,x1,y1,1,1,flp)
+	spr(f2,x2,y2,1,1,flp)
 	for p in all(_cowp) do
 		local pflp=false
 		if p[3]<0 then
@@ -162,6 +202,7 @@ function drawarena()
 		end
 		spr(3,p[1],p[2],1,1,pflp)
 	end
+	print(_cowhp,1,1,7)
 end
 __gfx__
 4444444440044004400000444444444407efe10407efe10440044004400400044000000440000044000000444000000444444444444444444444444444444444
