@@ -42,9 +42,9 @@ __lua__
 -- https://github.com/sestrenexsis/ld49_unstable
 
 --[[
-2d platformer in one spot
-defend city from enemy waves
-defeat 21 waves to win
+ 2d platformer in one spot
+ defend city from enemy waves
+ defeat 21 waves to win
 --]]
 
 _me="sestrenexsis"
@@ -53,9 +53,14 @@ _cart="ldjam49"
 --_version=1
 _cowx=0
 _cowy=0
+_cowvy=0 -- y velocity
 _coww=0 -- frames spent walking
 _cowp={} -- punches
 _cowf="" -- direction facing
+_grav=0.5
+_jump=-4
+_ceil=0
+_flor=92
 
 function _init()
 	initarena()
@@ -70,8 +75,8 @@ function _draw()
 end
 
 function initarena()
-	_cowx=32
-	_cowy=32
+	_cowx=60
+	_cowy=_flor
 	_coww=0
 	_cowf="rt"
 	initfn=initarena
@@ -99,8 +104,11 @@ function updatearena()
 			vx*=-1
 		end
 		add(_cowp,
-			{_cowx,_cowy,vx,vy,30}
+			{_cowx,_cowy+2,vx,vy,30}
 		)
+	end
+	if btnp(🅾️) then
+		_cowvy=_jump
 	end
 	if mov then
 		_cowx=tx
@@ -119,6 +127,16 @@ function updatearena()
 			del(_cowp,p)
 		end
 	end
+	-- apply jumping and gravity
+	_cowy=mid(
+		_ceil,
+		_cowy+_cowvy,
+		_flor
+	)
+	if _cowy==_flor then
+		_cowvy=0
+	end
+	_cowvy+=_grav
 end
 
 function drawarena()
