@@ -197,8 +197,10 @@ function updatearena()
 		elseif f[1]>64 then
 			f[1]-=1
 		end
-		if f[1]<_flor then
+		if f[2]<_flor then
 			f[2]+=1
+		elseif f[2]>_flor then
+			f[2]-=1
 		end
 		if f[5]<1 then
 			del(_foes,f)
