@@ -302,7 +302,10 @@ function updatearena()
 	end
 	_cowhp=mid(0,_cowhp+1,_maxhp)
 	if _cowhp>=_minhp then
-		_cowup=true
+		if not _cowup then
+			_tmrs["hurt"]=_invn
+			_cowup=true
+		end
 	end
 	_tmrs["hurt"]=max(
 		0,
