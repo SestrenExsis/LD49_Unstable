@@ -18,20 +18,6 @@ _cart="ldjam49"
 --]]
 
 --[[
-by day, the city is peaceful ...
-
-but at night, the light at the
-center of the city is 
-irresistable to hordes of 
-large flying monsters.
-
-while the city sleeps, it is
-up to you, a simple cow, to
-defend the light of the city,
-its most valuable power source.
---]]
-
---[[
 notes and ideas
 =====
 up ❎=uppercut sprite2
@@ -69,10 +55,63 @@ track13:the finally_finalwave
 --]]
 -->8
 -- globals
+_books={}
+_books["intro"]={
+	{
+		"by day, the city is peaceful,", 
+		"and fully-powered by the bright",
+		"light at its center ..."
+	},
+	{
+		"but at night, this light is",
+		"irresistable to hordes of",
+		"large flying monsters."
+	},
+	{
+		"while the city sleeps, it is",
+		"up to you, an immortal cow, to",
+		"defend the city's power source."
+	},
+	{
+		""
+	}
+}
+_books["lose"]={
+	{
+		"the power source shatters ..."
+	},
+	{
+		"and the city is plunged into",
+		"total darkness ..."
+	},
+	{
+		"you hear the flapping of",
+		"hundreds of giant wings ..."
+	},
+	{
+		""
+	}
+}
+_books["win"]={
+	{
+		"a much bigger light appears",
+		"in the daytime sky ..."
+	},
+	{
+		"and the winged beasts disperse"
+	},
+	{
+		"for now ..."
+	},
+	{
+		""
+	}
+}
+_page=1
 _sky=1
-_skys={12,13,1}
+_skys={12,13,1,0}
 _minhp=200
-_bgnhp=400
+_bgnhp=600
 _maxhp=1000
 _camx=8
 _camy=8
@@ -91,7 +130,7 @@ _flor=96
 _invn=30 -- i-frames
 _tols={} -- hp costs
 -- "name": cost
-_tols["fire"]=10
+_tols["fire"]=15
 _tols["jump"]=30
 _tols["hurt"]=120
 -- attacks
@@ -115,7 +154,7 @@ _pxls={}
 -- common functions
 
 function _init()
-	initarena()
+	initintro()
 end
 
 function _update()
@@ -181,7 +220,7 @@ function initarena()
 	_cowdr="rt"
 	_shak=0
 	_tmrs["walk"]=0
-	_tmrs["hurt"]=0
+	_tmrs["hurt"]=_invn
 	initfn=initarena
 	updatefn=updatearena
 	drawfn=drawarena
@@ -320,14 +359,18 @@ function updatearena()
 		)
 	end
 	if hitcity then
-		_ctyhp-=1
+		_ctyhp-=2
 		_shak=2
 	end
 	_shak=max(0,_shak-1)
 	if _cowhp<1 then
 		_cowup=false
 	end
-	_cowhp=mid(0,_cowhp+1,_maxhp)
+	_cowhp+=1
+	if not _cowup then
+		_cowhp+=1
+	end
+	_cowhp=mid(0,_cowhp,_maxhp)
 	if _cowhp>=_minhp then
 		if not _cowup then
 			_tmrs["hurt"]=_invn
@@ -417,14 +460,8 @@ function drawarena()
 	palt(4,false)
 	cls(4)
 	palt(4,true)
-	if t()<2 then
-		sky=1
-	elseif t()<4 then
-		sky=2
-	else
-		sky=3
-	end
-	pal(11,_skys[sky])
+	_sky=3
+	pal(11,_skys[_sky])
 	local rx=0
 	local ry=0
 	local shk=mid(-8,_shak,8)
@@ -504,15 +541,69 @@ function drawarena()
 		pset(p[2],p[3],p[1])
 	end
 end
+-->8
+-- intro
+
+function initintro()
+	_page=1
+	_book=_books["intro"]
+	initfn=initintro
+	updatefn=updateintro
+	drawfn=drawintro
+	music(4,8000)
+end
+
+function updateintro()
+	if btnp(❎) or btnp(🅾️) then
+		if _page>2 then
+			initarena()
+		end
+	end
+end
+
+function drawintro()
+	palt(0,false)
+	palt(4,false)
+	cls(4)
+	palt(4,true)
+	if t()<2 then
+		_sky=1
+		_page=4
+	elseif t()<10 then
+		_sky=1
+		_page=1
+	elseif t()<18 then
+		_sky=2
+		_page=2
+	elseif t()<26 then
+		_sky=3
+		_page=3
+	elseif t()<34 then
+		_sky=3
+		_page=4
+	else
+		_sky=3
+		_page=4
+	end
+	pal(11,_skys[_sky])
+	camera(_camx,_camy)
+	-- draw background
+	map(0,12,0,0,18,18)
+	i=0
+	for ln in all(_book[_page]) do
+		print(ln,10,6*i+56,7)
+		i+=1
+	end
+end
 __gfx__
 4444444440044004400000444444444407efe10407efe10440044004400400044000000440000044400000044400000044444444444444444444444444444444
 444444440150015040888e044444444407efe70407efe7040150015001505104018051040058ee04055555500055555044444444400044444444444444444444
-447447444077770040888ee00000000407efe50401efe504051775100517770005887700078576e0056667501156665044444444088800444444444444444444
-4447744408118110406558800ddddd70077e7710017e7704401282804081818040818180067567e00567775181577650400004008aaaa8044000040000000444
-44477444088188100776886005555760017771100077776040882820408818204088182005555550056777581857655000888088aaa88a0400888088aaa00444
-4474474408877550011766000555567007107710407106600887717000887550007775500d2d22d0405677558157650400aa80aaaa88aa0400aa80aaaaaa0044
-444444440817511071777004011155600104000040110110071e1550078715100777151002d2dd20405677755577550400aa8aa8888aa00400aa8aa8888aa004
-4444444407ee70047700004400000000004444444400400007ef700407ee700407eee00408585990440567775766504400aaaaaaaaa1004400aaaaa88888aa04
+447447444077770040888ee04000000007efe50401efe504051775100517770005887700078576e0056667501156665044444444088800444444444444444444
+4447744408118110406558800407ddd0077e7710017e7704401282804081818040818180067567e00567775181577650400004008aaaa8044000040000000444
+44477444088188100776886004067550017771100077776040882820408818204088182005555550056777581857655000888088aaa88a0400888088aaa00444
+4474474408877550011766000407655007107710407106600887717000887550007775500d2d22d0405677558157650400aa80aaaa88aa0400aa80aaaaaa0044
+444444440817511071777004040651100104000040110110071e1550078715100777151002d2dd20405677755577550400aa8aa8888aa00400aa8aa8888aa004
+4444444407ee70047700004440000000004444444400400007ef700407ee700407eee00408585990440567775766504400aaaaaaaaa1004400aaaaa88888aa04
 400000040efee1040efee10440efee1040efee10444444440efee1044444444408588580055555504405555555555044400aa7aaa5121044400aa7accaa88004
 050885100effe7040effe70440effe7040effe70444444440effe7044444444405555550058888504055228828225504408a77aa52221044408a77c77ca21004
 017115170effe7040effe70440effe7040effe70444444440effe70444444444085555800855558005655222222556500a8aa7aa555100440a8aa7acc8880044
@@ -757,4 +848,5 @@ __music__
 00 03044506
 02 04060503
 03 07424344
+03 02424344
 
