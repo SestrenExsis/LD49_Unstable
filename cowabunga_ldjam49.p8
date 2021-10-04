@@ -137,7 +137,7 @@ _tols["hurt"]=120
 -- #: {typ,x,y,vx,vy,tmr}
 _atks={}
 -- enemies
--- #: {typ,x,y,hp,tmr}
+-- #: {typ,x,y,hp,tmr,flp}
 _foes={}
 -- timers
 -- "name": tmr
@@ -147,6 +147,7 @@ _tmrs={} -- frame timers
 _typs={}
 _typs[1]={10,16,16}
 _typs[2]={12,16,16}
+_typs[3]={14,16,16}
 -- particles
 -- #: {colr,x,y,vx,vy,tmr}
 _pxls={}
@@ -296,7 +297,7 @@ function updatearena()
 		_cowvy=0
 	end
 	_cowvy+=_grav
-	-- check if hit by projectile
+	-- check if hit by attack
 	local cx1=_cowx
 	local cy1=_cowy
 	local cx2=_cowx+8
@@ -317,13 +318,19 @@ function updatearena()
 				_tmrs["hurt"]<1
 			) then
 				hitcow=true
+				del(_atks,a)
 			end
+		elseif collides(
+			a[1],ax1,ay1,ax2,ay2,
+			0,64,96,80,112
+		) then
+			hitcity=true
 		end
 		if a[1]==0 then
 			fx(ax1+4,ay1+6,0,1,1)
 		end
 	end
-	-- check if hit by enemy
+	-- check if cow hit by enemy
 	for f in all(_foes) do
 		local fx1=f[2]
 		local fy1=f[3]
@@ -339,10 +346,10 @@ function updatearena()
 				_tmrs["hurt"]<1
 			) then
 				hitcow=true
+				del(_foes,f)
 			end
-		end
 		-- enemy hits heart of city
-		if collides(
+		elseif collides(
 			f[1],fx1,fy1,fx2,fy2,
 			0,64,96,80,112
 		) then
@@ -383,18 +390,22 @@ function updatearena()
 	)
 	-- spawn new enemies
 	if rnd()<0.03 then
-		local x=rnd({-15,127})
+		local x=rnd({-4,135})
 		local y=0
-		local typ=rnd({1,2})
+		local typ=rnd({1,1,2})
 		local hp=1
-		local tmr=30
+		local tmr=rnd(20,40)
+		local flp=false
+		if x>64 then
+			flp=true
+		end
 		if typ==1 then
 			y=rnd({28,44,60,76})
-		elseif typ==2 then
+		else
 			y=rnd({2,18,34,50})
 		end
 		add(_foes,
-			{typ,x,y,hp,tmr}
+			{typ,x,y,hp,tmr,flp}
 		)
 	end
 	-- update enemies
@@ -417,15 +428,36 @@ function updatearena()
 			end
 		end
 		-- enemy movement
-		if f[2]<64 then
-			f[2]+=1
-		elseif f[2]>64 then
-			f[2]-=1
-		end
-		if f[3]<_flor then
-			f[3]+=1
-		elseif f[3]>_flor then
-			f[3]-=1
+		if f[1]==2 then
+			if f[3]>=_flor then
+				f[3]=_flor
+			elseif f[6] then
+				f[2]-=1
+			else
+				f[2]+=1
+			end
+			if f[2]<-5 then
+				f[6]=false
+				f[1]=3
+			elseif f[2]>136 then
+				f[6]=true
+				f[1]=3
+			end
+		else
+			local spd=1
+			if f[1]==3 then
+				spd=2
+			end
+			if f[2]<64 then
+				f[2]+=spd
+			elseif f[2]>64 then
+				f[2]-=spd
+			end
+			if f[3]<_flor then
+				f[3]+=spd
+			elseif f[3]>_flor then
+				f[3]-=spd
+			end
 		end
 		-- enemy health
 		if f[4]<1 then
@@ -439,7 +471,7 @@ function updatearena()
 					{1,f[2],f[3],0,1,150}
 				)
 			end
-			f[5]=120
+			f[5]=rnd(120,240)
 		end
 	end
 	-- update particles
@@ -504,12 +536,8 @@ function drawarena()
 	end
 	-- draw enemies
 	for f in all(_foes) do
-		local aflp=false
-		if f[2]>64 then
-			aflp=true
-		end
 		local frm=_typs[f[1]][1]
-		spr(frm,f[2],f[3],2,2,aflp)
+		spr(frm,f[2],f[3],2,2,f[6])
 	end
 	-- draw attacks
 	for a in all(_atks) do
@@ -604,9 +632,9 @@ __gfx__
 4474474408877550011766000407655007107710407106600887717000887550007775500d2d22d0405677558157650400aa80aaaa88aa0400aa80aaaaaa0044
 444444440817511071777004040651100104000040110110071e1550078715100777151002d2dd20405677755577550400aa8aa8888aa00400aa8aa8888aa004
 4444444407ee70047700004440000000004444444400400007ef700407ee700407eee00408585990440567775766504400aaaaaaaaa1004400aaaaa88888aa04
-400000040efee1040efee10440efee1040efee10444444440efee1044444444408588580055555504405555555555044400aa7aaa5121044400aa7accaa88004
-050885100effe7040effe70440effe7040effe70444444440effe7044444444405555550058888504055228828225504408a77aa52221044408a77c77ca21004
-017115170effe7040effe70440effe7040effe70444444440effe70444444444085555800855558005655222222556500a8aa7aa555100440a8aa7acc8880044
+400000040efee1040efee10440efee1040efee10444444440efee1044444444408588580055555504405555555555044400aa7cca5121044400aa7aaaa188004
+050885100effe7040effe70440effe7040effe70444444440effe7044444444405555550058888504055228828225504408a7caac2221044408a77aaa1121004
+017115170effe7040effe70440effe7040effe70444444440effe70444444444085555800855558005655222222556500a8aa7cc555100440a8aa7aa55880044
 4078875e07ee710407ee7104407ee710407ee7104444444407ee7700444444440000000000000000056751111115765008aaaa7aa88a800408aaaa7aa8a8a044
 407117ef01771104077711044017711040777110444444440177711044444444088a9880088a988005775899a88577500888877a8888a8040888877a88aa0044
 0571881e077077040177771001770770071707704444444401707710444444444089a8044089a8040577588a9805775040000a8aaaa88a0440000a8aaaaa0444
