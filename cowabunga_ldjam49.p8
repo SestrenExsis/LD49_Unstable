@@ -58,6 +58,9 @@ track13:the finally_finalwave
 _books={}
 _books["intro"]={
 	{
+		""
+	},
+	{
 		"by day, the city is peaceful,", 
 		"and fully-powered by the bright",
 		"light at its center ..."
@@ -65,7 +68,7 @@ _books["intro"]={
 	{
 		"but at night, this light is",
 		"irresistable to hordes of",
-		"large flying monsters."
+		"large, flying monsters."
 	},
 	{
 		"while the city sleeps, it is",
@@ -78,6 +81,9 @@ _books["intro"]={
 }
 _books["lose"]={
 	{
+		""
+	},
+	{
 		"the power source shatters ..."
 	},
 	{
@@ -89,22 +95,29 @@ _books["lose"]={
 		"hundreds of giant wings ..."
 	},
 	{
-		""
+		"press ❎ or 🅾️ to",
+		"try again!"
 	}
 }
 _books["win"]={
+	{
+		""
+	},
 	{
 		"a much bigger light appears",
 		"in the daytime sky ..."
 	},
 	{
-		"and the winged beasts disperse"
+		"and the winged beasts",
+		"disperse, for now ..."
 	},
 	{
-		"for now ..."
+		"♥ thank you for playing! ♥",
+		"-sestrenexsis & equalenergy"
 	},
 	{
-		""
+		"press ❎ or 🅾️ for a",
+		"tougher challenge!"
 	}
 }
 _page=1
@@ -130,6 +143,7 @@ _flor=96
 _invn=30 -- i-frames
 _base=0.01 -- base difficulty
 _diff=_base -- current diff
+_wins=0
 _tols={} -- hp costs
 -- "name": cost
 _tols["fire"]=15
@@ -216,6 +230,10 @@ end
 -- main
 
 function initarena()
+	if _sky>=#_skys then
+		_sky=3
+	end
+	_ctyhp=_maxhp
 	_cowhp=_bgnhp
 	_cowup=true
 	_cowx=60
@@ -225,6 +243,9 @@ function initarena()
 	_tmrs["walk"]=0
 	_tmrs["hurt"]=_invn
 	_tmrs["game"]=3600
+	_atks={}
+	_foes={}
+	_pxls={}
 	initfn=initarena
 	updatefn=updatearena
 	drawfn=drawarena
@@ -277,6 +298,9 @@ function dothecowthings()
 end
 
 function updatearena()
+	if _sky<3 then
+		_sky+=1
+	end
 	if _cowup then
 		dothecowthings()
 	end
@@ -371,6 +395,9 @@ function updatearena()
 	if hitcity then
 		_ctyhp-=2
 		_shak=2
+		if _ctyhp<1 then
+			initlose()
+		end
 	end
 	_shak=max(0,_shak-1)
 	if _cowhp<1 then
@@ -392,7 +419,7 @@ function updatearena()
 		_tmrs["hurt"]-1
 	)
 	-- spawn new enemies
-	_diff=_base
+	_diff=_base*(_wins+1)
 	local tmr=_tmrs["game"]
 	if tmr<1 then
 		_diff*=0
@@ -503,16 +530,22 @@ function updatearena()
 		end
 	end
 	_tmrs["game"]-=1
+	if (
+		_tmrs["game"]<1 and
+		#_foes<1
+	) then
+		initwin()
+	end
 end
 -->8
 -- draw
 
 function drawarena()
+	pal()
 	palt(0,false)
 	palt(4,false)
 	cls(4)
 	palt(4,true)
-	_sky=3
 	pal(11,_skys[_sky])
 	local rx=0
 	local ry=0
@@ -594,11 +627,14 @@ function drawarena()
 	print(debug,9,113,7)
 end
 -->8
+-- intro and game overs
+
 -- intro
 
 function initintro()
 	_page=1
 	_book=_books["intro"]
+	_tmrs["game"]=0
 	initfn=initintro
 	updatefn=updateintro
 	drawfn=drawintro
@@ -607,10 +643,11 @@ end
 
 function updateintro()
 	if btnp(❎) or btnp(🅾️) then
-		if _page>2 then
+		if _tmrs["game"]>2.5*30 then
 			initarena()
 		end
 	end
+	_tmrs["game"]+=1
 end
 
 function drawintro()
@@ -618,24 +655,167 @@ function drawintro()
 	palt(4,false)
 	cls(4)
 	palt(4,true)
-	if t()<2 then
-		_sky=1
-		_page=4
-	elseif t()<10 then
+	local tmr=_tmrs["game"]
+	if tmr<2*30 then
 		_sky=1
 		_page=1
-	elseif t()<18 then
+	elseif tmr<10*30 then
+		_sky=1
+		_page=2
+	elseif tmr<18*30 then
+		_sky=2
+		_page=3
+	elseif tmr<26*30 then
+		_sky=3
+		_page=4
+	elseif tmr<34*30 then
+		_sky=3
+		_page=5
+	else
+		initarena()
+	end
+	pal(11,_skys[_sky])
+	camera(_camx,_camy)
+	-- draw background
+	map(0,12,0,0,18,18)
+	i=0
+	for ln in all(_book[_page]) do
+		print(ln,10,6*i+56,7)
+		i+=1
+	end
+end
+
+-- lose
+
+function initlose()
+	_page=1
+	_book=_books["lose"]
+	_tmrs["game"]=0
+	initfn=initlose
+	updatefn=updatelose
+	drawfn=drawlose
+	music(2,8000)
+	sfx(17)
+	fx(68,112,0,-4,200)
+end
+
+function updatelose()
+	if btnp(❎) or btnp(🅾️) then
+		if _tmrs["game"]>2.5*30 then
+			initarena()
+		end
+	end
+	_tmrs["game"]+=1
+	-- update particles
+	for p in all(_pxls) do
+		p[2]+=p[4]
+		p[3]+=p[5]
+		p[6]-=1
+		if p[6]<1 then
+			del(_pxls,p)
+		end
+	end
+end
+
+function drawlose()
+	pal()
+	palt(0,false)
+	palt(4,false)
+	cls(4)
+	palt(4,true)
+	local tmr=_tmrs["game"]
+	if tmr<2*30 then
+		_sky=4
+		_page=1
+	elseif tmr<10*30 then
+		_sky=4
+		_page=2
+	elseif tmr<18*30 then
+		_sky=4
+		_page=3
+	elseif tmr<26*30 then
+		_sky=4
+		_page=4
+	elseif tmr<34*30 then
+		_sky=4
+		_page=5
+	else
+		initintro()
+	end
+	pal(2,1)
+	pal(3,5)
+	pal(5,1)
+	pal(6,5)
+	pal(7,5)
+	pal(9,1)
+	pal(10,5)
+	pal(11,_skys[_sky])
+	pal(12,5)
+	pal(13,0)
+	pal(15,5)
+	camera(_camx,_camy)
+	-- draw background
+	map(0,12,0,0,18,18)
+	i=0
+	for ln in all(_book[_page]) do
+		print(ln,10,6*i+56,7)
+		i+=1
+	end
+	-- draw particles
+	pal()
+	palt(0,false)
+	palt(4,false)
+	palt(4,true)
+	for p in all(_pxls) do
+		pset(p[2],p[3],p[1])
+	end
+end
+
+-- win
+
+function initwin()
+	_wins+=1
+	_page=1
+	_book=_books["win"]
+	_tmrs["game"]=0
+	initfn=initwin
+	updatefn=updatewin
+	drawfn=drawwin
+	music(4,8000)
+end
+
+function updatewin()
+	if btnp(❎) or btnp(🅾️) then
+		if _tmrs["game"]>34*30 then
+			initarena()
+		end
+	end
+	_tmrs["game"]+=1
+end
+
+function drawwin()
+	palt(0,false)
+	palt(4,false)
+	cls(4)
+	palt(4,true)
+	local tmr=_tmrs["game"]
+	if tmr<2*30 then
+		_sky=3
+		_page=1
+	elseif tmr<10*30 then
 		_sky=2
 		_page=2
-	elseif t()<26 then
-		_sky=3
+	elseif tmr<18*30 then
+		_sky=1
 		_page=3
-	elseif t()<34 then
-		_sky=3
+	elseif tmr<34*30 then
+		_sky=1
 		_page=4
+	elseif tmr<42*30 then
+		_sky=1
+		_page=5
 	else
-		_sky=3
-		_page=4
+		initintro()
 	end
 	pal(11,_skys[_sky])
 	camera(_camx,_camy)
@@ -859,10 +1039,10 @@ __map__
 494b49494949495e5f494949494b4b49494b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 4b494b4b4b49495e5e5f494949494b495e5f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 49494949495e5f4949494b4b495e5f496e6f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-49494949496e6f4b4b494949496e6f4949490000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+49494949496e6f4b4b494849496e6f4949490000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 484848484948484948484b484849484848480000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-4848484848484848484948484848484848480000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-4848484848494848484848484848484848480000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+4848484848484848484848484848484848480000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+4848484848484848484848484848484848480000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 4848484848484848484848484848484848480000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 4848484848484848484848484848484848480000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 4848484848486748484848484848484848480000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
