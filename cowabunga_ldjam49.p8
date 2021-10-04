@@ -240,7 +240,8 @@ function updatearena()
 	local cy1=_cowy
 	local cx2=_cowx+8
 	local cy2=_cowy+16
-	local hurt=false
+	local hitcow=false
+	local hitcity=false
 	for a in all(_atks) do
 		local ax1=a[2]
 		local ay1=a[3]
@@ -254,7 +255,7 @@ function updatearena()
 				_cowup and
 				_tmrs["hurt"]<1
 			) then
-				hurt=true
+				hitcow=true
 			end
 		end
 	end
@@ -264,6 +265,7 @@ function updatearena()
 		local fy1=f[3]
 		local fx2=f[2]+16
 		local fy2=f[3]+16
+		-- enemy hits cow
 		if collides(
 			f[1],fx1,fy1,fx2,fy2,
 			0,cx1,cy1,cx2,cy2
@@ -272,18 +274,28 @@ function updatearena()
 				_cowup and
 				_tmrs["hurt"]<1
 			) then
-				hurt=true
+				hitcow=true
 			end
+		end
+		-- enemy hits heart of city
+		if collides(
+			f[1],fx1,fy1,fx2,fy2,
+			0,56,80,72,96
+		) then
+			hitcity=true
 		end
 	end
 	-- update health
-	if hurt then
+	if hitcow then
 		_cowhp-=_tols["hurt"]
 		_tmrs["hurt"]=_invn
 		fx(
 			_cowx,_cowy,0,0,
 			_tols["hurt"]
 		)
+	end
+	if hitcity then
+		_ctyhp-=1
 	end
 	if _cowhp<1 then
 		_cowup=false
@@ -432,11 +444,13 @@ function drawarena()
 	print("city",1,113,7)
 	local city=100*(_ctyhp/_maxhp)
 	rectfill(19,112,121,118,14)
+	rectfill(20,113,120,117,2)
 	rectfill(20,113,20+city,117,8)
 	-- draw milk status bar
 	print("milk",1,121,7)
 	local milk=100*(_cowhp/_maxhp)
 	rectfill(19,120,121,126,6)
+	rectfill(20,121,120,125,5)
 	rectfill(20,121,20+milk,125,7)
 	line(40,121,40,125,8)
 	-- draw particles
